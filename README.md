@@ -1,6 +1,6 @@
 # 2024_master_slave
 # Source code to reproduce the results in the paper:
-M\'i­guez, J., Molina-Bulla, H., & Mari\~no, I.P. (2024). Master-slave coupling scheme for synchronization and parameter estimation in the generalized Kuramoto-Sivashinsky equation. Physical Review E 110(5), 054206
+M\'i­guez, J., Molina-Bulla, H., & Mariño, I.P. (2024). Master-slave coupling scheme for synchronization and parameter estimation in the generalized Kuramoto-Sivashinsky equation. Physical Review E 110(5), 054206
 
 
 ## List of matlab scripts
