@@ -1,0 +1,79 @@
+function [u,a,par,ok] = KScoupled(alpha0,beta0,gamma0,tgrd,N,a0,s_f,x,ae,D,mu)
+%
+%  function [u,a,x,par,ok] = KScoupled(alpha0,beta0,gamma0,tgrd,N,u0,s_f,x,ae,D,mu)
+%
+% alpha0, beta0, gamma0 : initial parameters
+% tgrd : time grid
+% N : Fourier coefficients from -N to N
+% a0 : initial condition of the FS coefficients
+% s_f : space is [0, s_f), periodic
+% x : full space grid
+% ae : estimated FS coeffs
+% D : coupling strength
+% mu : adaptation rate for the parameters
+%
+% u : signal
+% a : Fourier coefficients from -N to N
+% par : time-varying parameters
+% ok : 1 if the simulation completes without blowing up, 0 otherwise
+%
+
+ok = 1;
+
+% length of the time grid
+T = length(tgrd);
+
+% parameters
+par = zeros([3 T]);
+par(:,1) = [ alpha0, beta0, gamma0 ]';
+
+% FS coefficients
+a = zeros([2*N+1 T]);
+a(1:2*N+1,1) = a0;
+
+% Fundamental frequency & powers
+w0 = 2*pi/s_f;
+w02 = w0^2;
+w03 = w0^3;
+w04 = w0^4;
+W0 = [w0 w02 w03 w04]';
+
+% Freq. index & powers
+idx = (-N:N)';
+idx2 = ((-N:N).^2)';
+idx3 = ((-N:N).^3)';
+idx4 = ((-N:N).^4)';
+Ix = [idx idx2 idx3 idx4];
+
+% iFT matrix (FM is \bm{\Phi}^H(\bm{x}) in my notes) 
+FM = exp( 1i*w0*x*(-N:N) ); 
+u = zeros([length(x) T]);
+u(:,1) = FM*a0;
+
+% time loop
+for t = 2:T
+
+    % time step
+    ts = tgrd(t)-tgrd(t-1);
+
+    % sequential Euler
+    idn = 1:N+1;
+
+        % parameter update
+    par(:,t) = KSparupd(W0,Ix,a(:,t-1),par(:,t-1),N,ts,ae(:,t-1:t),D,mu);
+
+        % update of the FS coeffs 
+    dudt = KSdudt2(W0,Ix,a(:,t-1),par(1,t),par(2,t),par(3,t),N);
+    a(idn,t) = a(idn,t-1) + ts.*( D.*(ae(idn,t-1)-a(idn,t-1)) + dudt );
+    a(N+2:end,t) = conj(a(N:-1:1,t));
+
+    % reconstruction of the signal
+    u(:,t) = FM*a(:,t);
+
+    % check for numerical stability
+    if max(abs(a(:,t)))>1e+2
+        ok = 0;
+        return;
+    end %if
+
+end %t
